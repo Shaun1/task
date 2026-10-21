@@ -1,0 +1,85 @@
+# task
+
+Run each task in its own isolated Claude Code sandbox.
+
+`task start "fix login redirect bug"` run from inside a git repo will:
+
+1. read the repo's `origin` URL (fails if not in a git repo / no `origin`)
+2. `git clone --branch main --single-branch` it into `~/.task/clones/<repo>/<slug>`
+   (a fully self-contained clone; no worktree pointers that break in a sandbox)
+3. create and check out branch `<slug>` (`fix-login-redirect-bug`)
+4. copy your `user.name`/`user.email` into the clone's local git config
+5. record state in `~/.task/state/<slug>.json`
+6. create sandbox `claude-<slug>` for the clone, allow SSH to github.com for it, and
+   replace itself with `sbx run --name claude-<slug>` in the current terminal
+
+## Commands
+
+```
+task start <description>      # quotes optional
+task open [name]              # another Claude session in the task's sandbox
+task open [name] --shell      # your $SHELL on this machine, in the clone
+task open [name] --ide        # your configured IDE, on the clone
+task ls
+task rm [name] [--force]      # name inferred from cwd if inside a task clone
+```
+
+`rm` removes the sandbox and deletes the clone. It refuses if the clone has
+uncommitted changes or commits not on any `origin` branch (the clone is the only copy),
+unless `--force`. Push your branch first if you want to keep the work.
+
+`TASK_HOME` overrides the `~/.task` location.
+
+### Configuration
+
+`~/.task/config.json` (optional). The first `task open --ide` asks for your IDE, suggesting
+launchers it finds installed, and saves your answer here:
+
+```json
+{"ide": "goland"}
+```
+
+`ide` is a shell command; `task open --ide` runs it with the clone path appended, so
+`"open -a 'IntelliJ IDEA'"` or `"code"` also work. JetBrains Toolbox launchers (`goland`,
+`pycharm`, …) are found even if Toolbox's scripts folder isn't on your `PATH`.
+
+Shell completion (including task names for `open` and `rm`): `task completion --help`.
+
+## Build
+
+```
+make build    # bin/task
+make test
+make install
+```
+
+Dependencies: [cobra](https://github.com/spf13/cobra) and
+[golang.org/x/term](https://pkg.go.dev/golang.org/x/term).
+
+## Pushing from the sandbox
+
+Git over SSH to GitHub works inside the sandbox with no setup, as long as your key is
+loaded in your SSH agent (`ssh-add -l`). sbx forwards the agent, so the sandbox can sign
+but never sees the key. `task start` opens port 22 to `github.com` for that sandbox only.
+
+`gh` and other GitHub API calls (e.g. opening a PR) go over HTTPS and need a token. Give
+sbx one once; its proxy adds it to requests, so the token never enters the sandbox:
+
+```
+sbx secret set github --command 'gh auth token'
+```
+
+## Layout
+
+```
+cmd/task/            CLI entrypoint (cobra)
+internal/config/     TASK_HOME paths and config.json
+internal/naming/     slugify, repo name from URL
+internal/gitx/       clone, branch, dirty/unpushed checks (shells out to git)
+internal/sandbox/    the only sbx-aware package (interface + SBX impl)
+internal/host/       shell / IDE on the host for `task open`
+internal/proc/       hand the terminal over to another program
+internal/state/      JSON task records
+internal/workflow/   start / open / ls / rm
+internal/testutil/   hermetic git helpers for tests
+```
