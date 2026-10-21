@@ -62,7 +62,7 @@ func newEnv(t *testing.T) (Env, *fakeSandbox, string) {
 func TestStartCreatesCloneBranchStateAndLaunches(t *testing.T) {
 	env, fs, origin := newEnv(t)
 	testutil.Git(t, env.Cwd, "config", "user.email", "dev@example.com")
-	if err := env.Start("Fix login redirect bug"); err != nil {
+	if err := env.New("Fix login redirect bug"); err != nil {
 		t.Fatal(err)
 	}
 	dest := filepath.Join(env.Cfg.ClonesDir(), "origin", "fix-login-redirect-bug")
@@ -82,15 +82,15 @@ func TestStartCreatesCloneBranchStateAndLaunches(t *testing.T) {
 	if tk.SandboxName != "claude-fix-login-redirect-bug" || tk.OriginURL != origin || tk.ClonePath != dest {
 		t.Fatalf("bad state: %+v", tk)
 	}
-	if err := env.Start("fix login redirect bug"); err == nil || !strings.Contains(err.Error(), "already exists") {
-		t.Fatalf("duplicate start err = %v", err)
+	if err := env.New("fix login redirect bug"); err == nil || !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("duplicate new err = %v", err)
 	}
 }
 
 func TestStartPrintsWarningsAndContinues(t *testing.T) {
 	env, fs, _ := newEnv(t)
 	fs.warnings = []string{"no keys"}
-	if err := env.Start("warn me"); err != nil {
+	if err := env.New("warn me"); err != nil {
 		t.Fatal(err)
 	}
 	if out := env.Out.(*bytes.Buffer).String(); !strings.Contains(out, "warning: no keys\n") {
@@ -104,7 +104,7 @@ func TestStartPrintsWarningsAndContinues(t *testing.T) {
 func TestStartFailsOutsideRepo(t *testing.T) {
 	env, _, _ := newEnv(t)
 	env.Cwd = t.TempDir()
-	if err := env.Start("anything"); err == nil || !strings.Contains(err.Error(), "not a git repository") {
+	if err := env.New("anything"); err == nil || !strings.Contains(err.Error(), "not a git repository") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -112,7 +112,7 @@ func TestStartFailsOutsideRepo(t *testing.T) {
 func TestStartRollsBackWhenLaunchFails(t *testing.T) {
 	env, fs, _ := newEnv(t)
 	fs.runErr = os.ErrPermission
-	if err := env.Start("will fail"); err == nil {
+	if err := env.New("will fail"); err == nil {
 		t.Fatal("expected error")
 	}
 	if _, err := os.Stat(filepath.Join(env.Cfg.ClonesDir(), "origin", "will-fail")); !os.IsNotExist(err) {
@@ -126,14 +126,14 @@ func TestStartRollsBackWhenLaunchFails(t *testing.T) {
 func TestStartRefusesExistingSandbox(t *testing.T) {
 	env, fs, _ := newEnv(t)
 	fs.existing = []string{"claude-dupe"}
-	if err := env.Start("dupe"); err == nil || !strings.Contains(err.Error(), "sandbox") {
+	if err := env.New("dupe"); err == nil || !strings.Contains(err.Error(), "sandbox") {
 		t.Fatalf("err = %v", err)
 	}
 }
 
 func TestRemoveSafetyChecksAndForce(t *testing.T) {
 	env, fs, _ := newEnv(t)
-	if err := env.Start("my task"); err != nil {
+	if err := env.New("my task"); err != nil {
 		t.Fatal(err)
 	}
 	dest := filepath.Join(env.Cfg.ClonesDir(), "origin", "my-task")
@@ -171,7 +171,7 @@ func TestRemoveSafetyChecksAndForce(t *testing.T) {
 
 func TestRemoveForceDiscardsAndInfersFromCwd(t *testing.T) {
 	env, _, _ := newEnv(t)
-	if err := env.Start("force me"); err != nil {
+	if err := env.New("force me"); err != nil {
 		t.Fatal(err)
 	}
 	dest := filepath.Join(env.Cfg.ClonesDir(), "origin", "force-me")
@@ -214,7 +214,7 @@ func TestRemoveUnknownAndList(t *testing.T) {
 	if err := env.List(); err != nil || !strings.Contains(buf.String(), "No tasks") {
 		t.Fatalf("list empty: %q %v", buf.String(), err)
 	}
-	if err := env.Start("listed one"); err != nil {
+	if err := env.New("listed one"); err != nil {
 		t.Fatal(err)
 	}
 	buf.Reset()
@@ -225,7 +225,7 @@ func TestRemoveUnknownAndList(t *testing.T) {
 
 func TestOpen(t *testing.T) {
 	env, fs, _ := newEnv(t)
-	if err := env.Start("open me"); err != nil {
+	if err := env.New("open me"); err != nil {
 		t.Fatal(err)
 	}
 	h := env.Host.(*fakeHost)
@@ -261,7 +261,7 @@ func TestOpen(t *testing.T) {
 
 func TestOpenIDEPromptsOnFirstUse(t *testing.T) {
 	env, _, _ := newEnv(t)
-	if err := env.Start("ide me"); err != nil {
+	if err := env.New("ide me"); err != nil {
 		t.Fatal(err)
 	}
 	h := env.Host.(*fakeHost)
@@ -285,7 +285,7 @@ func TestOpenIDEPromptsOnFirstUse(t *testing.T) {
 
 	// An empty answer with nothing found is refused and nothing is saved.
 	env2, _, _ := newEnv(t)
-	if err := env2.Start("ide me"); err != nil {
+	if err := env2.New("ide me"); err != nil {
 		t.Fatal(err)
 	}
 	env2.Prompt = func(string, string) (string, error) { return " ", nil }

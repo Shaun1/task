@@ -1,4 +1,4 @@
-// Package workflow implements the start / open / ls / rm commands on top of
+// Package workflow implements the new / open / ls / rm commands on top of
 // gitx, sandbox and state.
 package workflow
 
@@ -55,9 +55,9 @@ const (
 
 func (e Env) store() state.Store { return state.Store{Dir: e.Cfg.StateDir()} }
 
-// Start clones the current repo's origin/main into a fresh directory, creates a
+// New clones the current repo's origin/main into a fresh directory, creates a
 // branch named after the description, and opens it in a Claude Code sandbox.
-func (e Env) Start(desc string) error {
+func (e Env) New(desc string) error {
 	root, err := gitx.RepoRoot(e.Cwd)
 	if err != nil {
 		return err

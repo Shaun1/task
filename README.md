@@ -2,7 +2,7 @@
 
 Run each task in its own isolated Claude Code sandbox.
 
-`task start "fix login redirect bug"` run from inside a git repo will:
+`task new "fix login redirect bug"` run from inside a git repo will:
 
 1. read the repo's `origin` URL (fails if not in a git repo / no `origin`)
 2. `git clone --branch main --single-branch` it into `~/.task/clones/<repo>/<slug>`
@@ -16,7 +16,7 @@ Run each task in its own isolated Claude Code sandbox.
 ## Commands
 
 ```
-task start <description>      # quotes optional
+task new <description>      # quotes optional
 task open [name]              # another Claude session in the task's sandbox
 task open [name] --shell      # your $SHELL on this machine, in the clone
 task open [name] --ide        # your configured IDE, on the clone
@@ -43,15 +43,33 @@ launchers it finds installed, and saves your answer here:
 `"open -a 'IntelliJ IDEA'"` or `"code"` also work. JetBrains Toolbox launchers (`goland`,
 `pycharm`, …) are found even if Toolbox's scripts folder isn't on your `PATH`.
 
-Shell completion (including task names for `open` and `rm`): `task completion --help`.
+## Shell completion
+
+Completes subcommands, flags, and task names for `open` and `rm`. Install the script once:
+
+```
+# bash (needs the bash-completion package)
+task completion bash > ~/.local/share/bash-completion/completions/task
+
+# zsh (any directory on your $fpath works; then restart the shell)
+task completion zsh > "${fpath[1]}/_task"
+
+# fish
+task completion fish > ~/.config/fish/completions/task.fish
+```
+
+Other shells: `task completion --help`.
 
 ## Build
 
 ```
 make build    # bin/task
 make test
-make install
+make install  # also installs completion for your $SHELL (bash, zsh or fish)
 ```
+
+`task --version` prints the build: the `git describe` output when built with `make`, or
+`dev-<commit>` (with `-dirty` for uncommitted changes) for a plain `go build`.
 
 Dependencies: [cobra](https://github.com/spf13/cobra) and
 [golang.org/x/term](https://pkg.go.dev/golang.org/x/term).
@@ -60,7 +78,7 @@ Dependencies: [cobra](https://github.com/spf13/cobra) and
 
 Git over SSH to GitHub works inside the sandbox with no setup, as long as your key is
 loaded in your SSH agent (`ssh-add -l`). sbx forwards the agent, so the sandbox can sign
-but never sees the key. `task start` opens port 22 to `github.com` for that sandbox only.
+but never sees the key. `task new` opens port 22 to `github.com` for that sandbox only.
 
 `gh` and other GitHub API calls (e.g. opening a PR) go over HTTPS and need a token. Give
 sbx one once; its proxy adds it to requests, so the token never enters the sandbox:
@@ -80,6 +98,6 @@ internal/sandbox/    the only sbx-aware package (interface + SBX impl)
 internal/host/       shell / IDE on the host for `task open`
 internal/proc/       hand the terminal over to another program
 internal/state/      JSON task records
-internal/workflow/   start / open / ls / rm
+internal/workflow/   new / open / ls / rm
 internal/testutil/   hermetic git helpers for tests
 ```
