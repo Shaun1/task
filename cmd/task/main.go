@@ -65,6 +65,7 @@ func newRootCmd() *cobra.Command {
 		Short:         "Run a task in an isolated Claude Code sandbox",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Version:       buildVersion(),
 	}
 	root.AddCommand(newStartCmd(), newOpenCmd(), newLsCmd(), newRmCmd())
 	return root
@@ -72,17 +73,17 @@ func newRootCmd() *cobra.Command {
 
 func newStartCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "start <description>",
+		Use:   "new <description>",
 		Short: "Clone origin/main, branch from the description, open Claude Code in a sandbox",
-		Example: `  task start fix login redirect bug
-  task start "fix login redirect bug"`,
+		Example: `  task new fix login redirect bug
+  task new "fix login redirect bug"`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := newEnv()
 			if err != nil {
 				return err
 			}
-			return env.Start(strings.Join(args, " "))
+			return env.New(strings.Join(args, " "))
 		},
 	}
 }
