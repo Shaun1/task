@@ -11,7 +11,6 @@ vet:
 
 install: build
 	go install ./cmd/task
-	cp ./bin/task /Users/shaun/scripts/task
 
 clean:
 	rm -rf bin
