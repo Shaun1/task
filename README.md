@@ -19,6 +19,7 @@ Run each task in its own isolated Claude Code sandbox.
 task new <description>      # quotes optional
 task open [name]              # another Claude session in the task's sandbox
 task open [name] --shell      # your $SHELL on this machine, in the clone
+task open [name] --sbx        # a bash shell inside the task's sandbox, in the clone
 task open [name] --ide        # your configured IDE, on the clone
 task ls
 task rm [name] [--force]      # name inferred from cwd if inside a task clone
