@@ -72,6 +72,17 @@ make install  # also installs completion for your $SHELL (bash, zsh or fish)
 `task --version` prints the build: the `git describe` output when built with `make`, or
 `dev-<commit>` (with `-dirty` for uncommitted changes) for a plain `go build`.
 
+Publishing a GitHub release runs `.github/workflows/release.yml`, which tests, builds a
+macOS Apple Silicon binary and attaches `task_<tag>_darwin_arm64.tar.gz` (plus a
+`.sha256`) to the release. To install it:
+
+```
+curl -fsSL https://github.com/Shaun1/task/releases/download/<tag>/task_<tag>_darwin_arm64.tar.gz | tar -xz -C /usr/local/bin task
+```
+
+A copy downloaded with a browser is quarantined by Gatekeeper; clear that with
+`xattr -d com.apple.quarantine task`.
+
 Dependencies: [cobra](https://github.com/spf13/cobra) and
 [golang.org/x/term](https://pkg.go.dev/golang.org/x/term).
 
