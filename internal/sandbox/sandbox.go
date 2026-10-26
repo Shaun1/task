@@ -31,6 +31,9 @@ type Sandbox interface {
 	// Attach starts a new agent session in existing sandbox name, in the
 	// current terminal. On unix it only returns on failure.
 	Attach(name string) error
+	// Shell opens an interactive shell in existing sandbox name, in dir, in
+	// the current terminal. On unix it only returns on failure.
+	Shell(name, dir string) error
 	// Remove stops and deletes a sandbox without prompting.
 	Remove(name string) error
 	// Warnings reports host setup missing for working on originURL inside
@@ -84,6 +87,12 @@ func (s *SBX) Run(name, dir string) error {
 // `sbx run --name` gets its own agent process.
 func (s *SBX) Attach(name string) error {
 	return proc.Exec("", s.Bin, "run", "--name", name)
+}
+
+// Shell runs bash in the sandbox via `sbx exec`. Env set with `create -e`
+// only reaches agent sessions, so the SSH setting is passed again.
+func (s *SBX) Shell(name, dir string) error {
+	return proc.Exec("", s.Bin, "exec", "-it", "-e", sshEnv, "-w", dir, name, "bash")
 }
 
 // Remove uses --force because `sbx rm` otherwise asks for confirmation. It

@@ -48,9 +48,10 @@ type Host interface {
 type Target int
 
 const (
-	TargetClaude Target = iota // new agent session in the task's sandbox
-	TargetShell                // shell on the host, in the clone
-	TargetIDE                  // configured IDE on the host, on the clone
+	TargetClaude       Target = iota // new agent session in the task's sandbox
+	TargetShell                      // shell on the host, in the clone
+	TargetIDE                        // configured IDE on the host, on the clone
+	TargetSandboxShell               // shell in the task's sandbox, in the clone
 )
 
 func (e Env) store() state.Store { return state.Store{Dir: e.Cfg.StateDir()} }
@@ -181,21 +182,35 @@ func (e Env) Open(name string, target Target) error {
 		}
 		fmt.Fprintf(e.Out, "Opening %s in %s\n", t.ClonePath, e.Cfg.IDE)
 		return e.Host.OpenIDE(e.Cfg.IDE, t.ClonePath)
+	case TargetSandboxShell:
+		if err := e.requireSandbox(t); err != nil {
+			return err
+		}
+		fmt.Fprintf(e.Out, "Opening a shell in sandbox %s (exit to return)\n", t.SandboxName)
+		return e.Sandbox.Shell(t.SandboxName, t.ClonePath)
 	default:
 		// sbx run --name on a missing sandbox would create a new one on the
 		// current directory, so check first.
-		names, err := e.Sandbox.List()
-		if err != nil {
+		if err := e.requireSandbox(t); err != nil {
 			return err
 		}
-		for _, n := range names {
-			if n == t.SandboxName {
-				fmt.Fprintf(e.Out, "Starting a new Claude session in sandbox %s\n", t.SandboxName)
-				return e.Sandbox.Attach(t.SandboxName)
-			}
-		}
-		return fmt.Errorf("sandbox %s no longer exists; remove the task with: task rm %s", t.SandboxName, t.Name)
+		fmt.Fprintf(e.Out, "Starting a new Claude session in sandbox %s\n", t.SandboxName)
+		return e.Sandbox.Attach(t.SandboxName)
 	}
+}
+
+// requireSandbox fails if the task's sandbox no longer exists.
+func (e Env) requireSandbox(t state.Task) error {
+	names, err := e.Sandbox.List()
+	if err != nil {
+		return err
+	}
+	for _, n := range names {
+		if n == t.SandboxName {
+			return nil
+		}
+	}
+	return fmt.Errorf("sandbox %s no longer exists; remove the task with: task rm %s", t.SandboxName, t.Name)
 }
 
 // configureIDE asks for the IDE command on first use and saves it.

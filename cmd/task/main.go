@@ -89,21 +89,22 @@ func newStartCmd() *cobra.Command {
 }
 
 func newOpenCmd() *cobra.Command {
-	var shell, ide bool
+	var shell, sbx, ide bool
 	cmd := &cobra.Command{
-		Use:   "open [name]",
+		Use:   "open [name] [--shell | --sbx | --ide]",
 		Short: "Open a new Claude session, shell or IDE on a task (name inferred from cwd if omitted)",
 		Long: `Attach a new process to an existing task.
 
 By default this starts another Claude Code session in the task's sandbox.
---shell opens your $SHELL on this machine in the task's clone instead, and
---ide opens the clone in the IDE set in ~/.task/config.json, e.g.:
+--shell opens your $SHELL on this machine in the task's clone instead,
+--sbx opens a bash shell inside the task's sandbox, and --ide opens the clone in the IDE set in ~/.task/config.json, e.g.:
 
   {"ide": "goland"}
 
 The IDE value is a shell command; the clone path is appended to it.`,
 		Example: `  task open fix-login-redirect-bug
   task open --shell
+  task open --sbx
   task open --ide`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -119,6 +120,8 @@ The IDE value is a shell command; the clone path is appended to it.`,
 			switch {
 			case shell:
 				target = workflow.TargetShell
+			case sbx:
+				target = workflow.TargetSandboxShell
 			case ide:
 				target = workflow.TargetIDE
 			}
@@ -127,8 +130,9 @@ The IDE value is a shell command; the clone path is appended to it.`,
 		ValidArgsFunction: completeTaskNames,
 	}
 	cmd.Flags().BoolVar(&shell, "shell", false, "open your shell on this machine, in the task's clone")
+	cmd.Flags().BoolVar(&sbx, "sbx", false, "open a shell inside the task's sandbox, in the clone")
 	cmd.Flags().BoolVar(&ide, "ide", false, "open the task's clone in your configured IDE")
-	cmd.MarkFlagsMutuallyExclusive("shell", "ide")
+	cmd.MarkFlagsMutuallyExclusive("shell", "sbx", "ide")
 	return cmd
 }
 

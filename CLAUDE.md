@@ -9,7 +9,7 @@
 ## CLI (v1, deliberately small)
 ```
 task new <description>      # quotes optional
-task open [name] [--shell | --ide]   # new Claude session (default), host shell, or IDE
+task open [name] [--shell | --sbx | --ide]   # new Claude session (default), host shell, sandbox shell, or IDE
 task ls
 task rm [name] [--force]      # name inferred from cwd if inside a task clone
 ```
@@ -18,7 +18,7 @@ No `--repo`, `--branch`, `--base`, `--prefix`, `--keep-branch` or `--delete-bran
 ## Behavior
 `new`: find git root → read `origin` URL → slugify description (lowercase, non-alphanumerics → `-`, collapsed, max 40 chars) → print warnings (never fatal; GitHub origins only) if the host SSH agent has no keys or isn't reachable (SSH origins) or there's no global `github` sbx secret → `git clone --branch main --single-branch <origin> ~/.task/clones/<repo>/<slug>` → widen `remote.origin.fetch` to all branches + `push.autoSetupRemote=true` (single-branch refspec meant pushed branches got no `origin/<branch>` ref, which broke `gh pr create`) → `git checkout -b <slug>` → copy `user.name`/`user.email` (as resolved in the source repo) into the clone's local config → save `~/.task/state/<slug>.json` → `sbx create --name claude-<slug> -e GIT_SSH_COMMAND=… claude <clone>` → `sbx policy allow network --sandbox claude-<slug> github.com:22` → `syscall.Exec` into `sbx run --name claude-<slug>` in the current terminal. Rolls back clone + state if launch fails. Fails early if the task, clone dir or sandbox name already exists. `TASK_HOME` overrides `~/.task`.
 
-`open`: resolve task (name or cwd) → require the clone dir → default: check the sandbox still exists (`sbx run --name` on a missing one would create a new sandbox on cwd), then `syscall.Exec` into `sbx run --name <sandbox>`; each such run starts a separate agent process in the same sandbox (verified) → `--shell`: chdir to the clone and exec `$SHELL` → `--ide`: run `sh -c '<ide> "$1"' sh <clone>` with JetBrains Toolbox's scripts dir appended to PATH; if `ide` isn't configured: when stdin is a terminal (`x/term`; a char-device check is wrong because `/dev/null` is one), prompt with the first installed known launcher as default, save to `config.json`, then open; otherwise error.
+`open`: resolve task (name or cwd) → require the clone dir → default: check the sandbox still exists (`sbx run --name` on a missing one would create a new sandbox on cwd), then `syscall.Exec` into `sbx run --name <sandbox>`; each such run starts a separate agent process in the same sandbox (verified) → `--shell`: chdir to the clone and exec `$SHELL` → `--sbx`: same sandbox-exists check, then exec `sbx exec -it -e GIT_SSH_COMMAND=… -w <clone> <sandbox> bash` (the clone is mounted at the same path inside; `create -e` env doesn't reach `exec`, so it's passed again) → `--ide`: run `sh -c '<ide> "$1"' sh <clone>` with JetBrains Toolbox's scripts dir appended to PATH; if `ide` isn't configured: when stdin is a terminal (`x/term`; a char-device check is wrong because `/dev/null` is one), prompt with the first installed known launcher as default, save to `config.json`, then open; otherwise error.
 
 `rm`: resolve task (name or cwd) → refuse unless `--force` if the clone has uncommitted/untracked changes or commits not on any `origin` branch (uses `git ls-remote`, because single-branch clones don't track branches pushed later) → `sbx rm --force` (stops too; ignore not-found) → delete clone (only if under `~/.task/clones`) → delete state file. The clone is the only copy of unpushed work, so the safety check matters.
 

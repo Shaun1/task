@@ -20,9 +20,15 @@ type fakeSandbox struct {
 	runErr   error
 	warnings []string
 	attached []string
+	shells   []string // "name dir"
 }
 
 func (f *fakeSandbox) Attach(name string) error { f.attached = append(f.attached, name); return nil }
+
+func (f *fakeSandbox) Shell(name, dir string) error {
+	f.shells = append(f.shells, name+" "+dir)
+	return nil
+}
 
 type fakeHost struct {
 	shells []string
@@ -235,9 +241,17 @@ func TestOpen(t *testing.T) {
 	if err := env.Open("open-me", TargetClaude); err == nil || !strings.Contains(err.Error(), "no longer exists") {
 		t.Fatalf("missing sandbox err = %v", err)
 	}
+	if err := env.Open("open-me", TargetSandboxShell); err == nil || !strings.Contains(err.Error(), "no longer exists") {
+		t.Fatalf("missing sandbox shell err = %v", err)
+	}
 	fs.existing = []string{"claude-open-me"}
 	if err := env.Open("open-me", TargetClaude); err != nil || len(fs.attached) != 1 || fs.attached[0] != "claude-open-me" {
 		t.Fatalf("attach: err=%v attached=%v", err, fs.attached)
+	}
+
+	// Sandbox shell: in the clone, inside the task's sandbox.
+	if err := env.Open("open-me", TargetSandboxShell); err != nil || len(fs.shells) != 1 || fs.shells[0] != "claude-open-me "+dest {
+		t.Fatalf("sandbox shell: err=%v shells=%v", err, fs.shells)
 	}
 
 	// Shell, with the task inferred from a directory inside the clone.
