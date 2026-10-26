@@ -15,7 +15,7 @@ import (
 // Home (default ~/.task, override with $TASK_HOME).
 type Config struct {
 	Home string `json:"-"`
-	// IDE is the command `task open --ide` runs with the clone path appended,
+	// IDE is the command `task do --ide` runs with the clone path appended,
 	// e.g. "goland" or "open -a 'IntelliJ IDEA'".
 	IDE string `json:"ide,omitempty"`
 }

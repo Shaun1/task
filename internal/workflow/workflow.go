@@ -1,4 +1,4 @@
-// Package workflow implements the new / open / ls / rm commands on top of
+// Package workflow implements the new / do / ls / rm commands on top of
 // gitx, sandbox and state.
 package workflow
 
@@ -44,7 +44,7 @@ type Host interface {
 	IDECandidates() []string
 }
 
-// Target is what `task open` attaches to a task.
+// Target is what `task do` attaches to a task.
 type Target int
 
 const (
@@ -160,9 +160,9 @@ func (e Env) Remove(name string, force bool) error {
 	return store.Delete(t.Name)
 }
 
-// Open attaches a new process to an existing task. With name == "" it infers
+// Do attaches a new process to an existing task. With name == "" it infers
 // the task from the current directory.
-func (e Env) Open(name string, target Target) error {
+func (e Env) Do(name string, target Target) error {
 	t, err := e.resolve(e.store(), name)
 	if err != nil {
 		return err

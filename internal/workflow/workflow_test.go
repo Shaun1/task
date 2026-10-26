@@ -229,7 +229,7 @@ func TestRemoveUnknownAndList(t *testing.T) {
 	}
 }
 
-func TestOpen(t *testing.T) {
+func TestDo(t *testing.T) {
 	env, fs, _ := newEnv(t)
 	if err := env.New("open me"); err != nil {
 		t.Fatal(err)
@@ -238,19 +238,19 @@ func TestOpen(t *testing.T) {
 	dest := filepath.Join(env.Cfg.ClonesDir(), "origin", "open-me")
 
 	// Claude: refuses while the sandbox is missing, attaches once it exists.
-	if err := env.Open("open-me", TargetClaude); err == nil || !strings.Contains(err.Error(), "no longer exists") {
+	if err := env.Do("open-me", TargetClaude); err == nil || !strings.Contains(err.Error(), "no longer exists") {
 		t.Fatalf("missing sandbox err = %v", err)
 	}
-	if err := env.Open("open-me", TargetSandboxShell); err == nil || !strings.Contains(err.Error(), "no longer exists") {
+	if err := env.Do("open-me", TargetSandboxShell); err == nil || !strings.Contains(err.Error(), "no longer exists") {
 		t.Fatalf("missing sandbox shell err = %v", err)
 	}
 	fs.existing = []string{"claude-open-me"}
-	if err := env.Open("open-me", TargetClaude); err != nil || len(fs.attached) != 1 || fs.attached[0] != "claude-open-me" {
+	if err := env.Do("open-me", TargetClaude); err != nil || len(fs.attached) != 1 || fs.attached[0] != "claude-open-me" {
 		t.Fatalf("attach: err=%v attached=%v", err, fs.attached)
 	}
 
 	// Sandbox shell: in the clone, inside the task's sandbox.
-	if err := env.Open("open-me", TargetSandboxShell); err != nil || len(fs.shells) != 1 || fs.shells[0] != "claude-open-me "+dest {
+	if err := env.Do("open-me", TargetSandboxShell); err != nil || len(fs.shells) != 1 || fs.shells[0] != "claude-open-me "+dest {
 		t.Fatalf("sandbox shell: err=%v shells=%v", err, fs.shells)
 	}
 
@@ -259,21 +259,21 @@ func TestOpen(t *testing.T) {
 	if err := os.Mkdir(env.Cwd, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := env.Open("", TargetShell); err != nil || len(h.shells) != 1 || h.shells[0] != dest {
+	if err := env.Do("", TargetShell); err != nil || len(h.shells) != 1 || h.shells[0] != dest {
 		t.Fatalf("shell: err=%v shells=%v", err, h.shells)
 	}
 
 	// IDE: non-interactive and unconfigured is an error.
-	if err := env.Open("open-me", TargetIDE); err == nil || !strings.Contains(err.Error(), "no IDE configured") {
+	if err := env.Do("open-me", TargetIDE); err == nil || !strings.Contains(err.Error(), "no IDE configured") {
 		t.Fatalf("unconfigured IDE err = %v", err)
 	}
 	env.Cfg.IDE = "goland"
-	if err := env.Open("open-me", TargetIDE); err != nil || len(h.ides) != 1 || h.ides[0] != "goland "+dest {
+	if err := env.Do("open-me", TargetIDE); err != nil || len(h.ides) != 1 || h.ides[0] != "goland "+dest {
 		t.Fatalf("ide: err=%v ides=%v", err, h.ides)
 	}
 }
 
-func TestOpenIDEPromptsOnFirstUse(t *testing.T) {
+func TestDoIDEPromptsOnFirstUse(t *testing.T) {
 	env, _, _ := newEnv(t)
 	if err := env.New("ide me"); err != nil {
 		t.Fatal(err)
@@ -283,7 +283,7 @@ func TestOpenIDEPromptsOnFirstUse(t *testing.T) {
 	var gotDef string
 	env.Prompt = func(_, def string) (string, error) { gotDef = def; return def, nil }
 
-	if err := env.Open("ide-me", TargetIDE); err != nil {
+	if err := env.Do("ide-me", TargetIDE); err != nil {
 		t.Fatal(err)
 	}
 	if gotDef != "goland" {
@@ -303,7 +303,7 @@ func TestOpenIDEPromptsOnFirstUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	env2.Prompt = func(string, string) (string, error) { return " ", nil }
-	if err := env2.Open("ide-me", TargetIDE); err == nil || !strings.Contains(err.Error(), "no IDE given") {
+	if err := env2.Do("ide-me", TargetIDE); err == nil || !strings.Contains(err.Error(), "no IDE given") {
 		t.Fatalf("empty answer err = %v", err)
 	}
 	if _, err := os.Stat(env2.Cfg.File()); err == nil {

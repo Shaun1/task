@@ -67,7 +67,7 @@ func newRootCmd() *cobra.Command {
 		SilenceErrors: true,
 		Version:       buildVersion(),
 	}
-	root.AddCommand(newStartCmd(), newOpenCmd(), newLsCmd(), newRmCmd())
+	root.AddCommand(newStartCmd(), newDoCmd(), newLsCmd(), newRmCmd())
 	return root
 }
 
@@ -88,10 +88,10 @@ func newStartCmd() *cobra.Command {
 	}
 }
 
-func newOpenCmd() *cobra.Command {
+func newDoCmd() *cobra.Command {
 	var shell, sbx, ide bool
 	cmd := &cobra.Command{
-		Use:   "open [name] [--shell | --sbx | --ide]",
+		Use:   "do [name] [--shell | --sbx | --ide]",
 		Short: "Open a new Claude session, shell or IDE on a task (name inferred from cwd if omitted)",
 		Long: `Attach a new process to an existing task.
 
@@ -102,10 +102,10 @@ By default this starts another Claude Code session in the task's sandbox.
   {"ide": "goland"}
 
 The IDE value is a shell command; the clone path is appended to it.`,
-		Example: `  task open fix-login-redirect-bug
-  task open --shell
-  task open --sbx
-  task open --ide`,
+		Example: `  task do fix-login-redirect-bug
+  task do --shell
+  task do --sbx
+  task do --ide`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := newEnv()
@@ -125,7 +125,7 @@ The IDE value is a shell command; the clone path is appended to it.`,
 			case ide:
 				target = workflow.TargetIDE
 			}
-			return env.Open(name, target)
+			return env.Do(name, target)
 		},
 		ValidArgsFunction: completeTaskNames,
 	}

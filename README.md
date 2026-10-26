@@ -17,12 +17,12 @@ Run each task in its own isolated Claude Code sandbox.
 
 ```
 task new <description>      # quotes optional
-task open [name]              # another Claude session in the task's sandbox
-task open [name] --shell      # your $SHELL on this machine, in the clone
-task open [name] --sbx        # a bash shell inside the task's sandbox, in the clone
-task open [name] --ide        # your configured IDE, on the clone
+task do [name]              # another Claude session in the task's sandbox
+task do [name] --shell      # your $SHELL on this machine, in the clone
+task do [name] --sbx        # a bash shell inside the task's sandbox, in the clone
+task do [name] --ide        # your configured IDE, on the clone
 task ls
-task rm [name] [--force]      # name inferred from cwd if inside a task clone
+task rm [name] [--force]    # name inferred from cwd if inside a task clone
 ```
 
 `rm` removes the sandbox and deletes the clone. It refuses if the clone has
@@ -33,20 +33,20 @@ unless `--force`. Push your branch first if you want to keep the work.
 
 ### Configuration
 
-`~/.task/config.json` (optional). The first `task open --ide` asks for your IDE, suggesting
+`~/.task/config.json` (optional). The first `task do --ide` asks for your IDE, suggesting
 launchers it finds installed, and saves your answer here:
 
 ```json
 {"ide": "goland"}
 ```
 
-`ide` is a shell command; `task open --ide` runs it with the clone path appended, so
+`ide` is a shell command; `task do --ide` runs it with the clone path appended, so
 `"open -a 'IntelliJ IDEA'"` or `"code"` also work. JetBrains Toolbox launchers (`goland`,
 `pycharm`, …) are found even if Toolbox's scripts folder isn't on your `PATH`.
 
 ## Shell completion
 
-Completes subcommands, flags, and task names for `open` and `rm`. Install the script once:
+Completes subcommands, flags, and task names for `do` and `rm`. Install the script once:
 
 ```
 # bash (needs the bash-completion package)
@@ -107,9 +107,9 @@ internal/config/     TASK_HOME paths and config.json
 internal/naming/     slugify, repo name from URL
 internal/gitx/       clone, branch, dirty/unpushed checks (shells out to git)
 internal/sandbox/    the only sbx-aware package (interface + SBX impl)
-internal/host/       shell / IDE on the host for `task open`
+internal/host/       shell / IDE on the host for `task do`
 internal/proc/       hand the terminal over to another program
 internal/state/      JSON task records
-internal/workflow/   new / open / ls / rm
+internal/workflow/   new / do / ls / rm
 internal/testutil/   hermetic git helpers for tests
 ```
