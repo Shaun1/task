@@ -1,0 +1,51 @@
+# Builds the macOS Apple Silicon binary for each published GitHub release and
+# attaches it to the release as a downloadable asset.
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # upload release assets
+
+jobs:
+  darwin-arm64:
+    # macos-latest runs on Apple Silicon, so tests run on the target platform.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Test
+        run: make vet test
+
+      - name: Build
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: "0"
+        run: make build VERSION=${{ github.event.release.tag_name }}
+
+      # tar keeps the executable bit, which a bare binary download loses.
+      - name: Package
+        id: package
+        run: |
+          name="task_${{ github.event.release.tag_name }}_darwin_arm64"
+          tar -czf "$name.tar.gz" -C bin task
+          shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "${{ steps.package.outputs.name }}.tar.gz" \
+            "${{ steps.package.outputs.name }}.tar.gz.sha256" \
+            --clobber
