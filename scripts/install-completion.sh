@@ -17,7 +17,9 @@ fish)
 	install_to fish "${XDG_CONFIG_HOME:-$HOME/.config}/fish/completions" task.fish
 	;;
 zsh)
-	# Use the first writable directory on the user's real $fpath.
+	# Use the first writable directory on the user's real $fpath. Its first
+	# entry often doesn't exist (e.g. /usr/local/share/zsh/site-functions on
+	# Apple Silicon, where Homebrew lives in /opt/homebrew), hence the checks.
 	for dir in $(zsh -ic 'print -rl -- $fpath' 2>/dev/null); do
 		if [ -d "$dir" ] && [ -w "$dir" ]; then
 			install_to zsh "$dir" _task
@@ -25,7 +27,11 @@ zsh)
 			exit 0
 		fi
 	done
-	echo "no writable directory on your zsh \$fpath; see: task completion --help"
+	# None: fall back to a user directory, which ~/.zshrc must add to $fpath.
+	install_to zsh "$HOME/.zsh/completions" _task
+	echo "add these lines to ~/.zshrc (before any existing compinit), then restart your shell:"
+	echo '  fpath=(~/.zsh/completions $fpath)'
+	echo '  autoload -U compinit && compinit'
 	;;
 *)
 	echo "skipping completion: unsupported shell '${SHELL:-unknown}' (see: task completion --help)"

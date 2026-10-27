@@ -52,12 +52,25 @@ Completes subcommands, flags, and task names for `do` and `rm`. Install the scri
 # bash (needs the bash-completion package)
 task completion bash > ~/.local/share/bash-completion/completions/task
 
-# zsh (any directory on your $fpath works; then restart the shell)
-task completion zsh > "${fpath[1]}/_task"
+# zsh (Intel and Apple Silicon Macs, Linux)
+mkdir -p ~/.zsh/completions
+task completion zsh > ~/.zsh/completions/_task
 
 # fish
 task completion fish > ~/.config/fish/completions/task.fish
 ```
+
+For zsh, also add these lines to `~/.zshrc` once (before any existing `compinit`, e.g. above
+Oh My Zsh), then restart the shell:
+
+```
+fpath=(~/.zsh/completions $fpath)
+autoload -U compinit && compinit
+```
+
+Don't write to `"${fpath[1]}"`: on Apple Silicon Macs it is usually
+`/usr/local/share/zsh/site-functions`, which doesn't exist there (Homebrew uses `/opt/homebrew`),
+and the system directories after it aren't writable.
 
 Other shells: `task completion --help`.
 
